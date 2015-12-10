@@ -24,8 +24,7 @@ module.exports = function(grunt) {
 			logCount: false,
 			force: grunt.option('force') || false,
 			warnLimit: 4000,
-			imports: true,
-			failOnLimit: false
+			imports: true
 		});
 		grunt.log.writeflags(options, 'options');
 
@@ -78,14 +77,9 @@ module.exports = function(grunt) {
 					}
 
 					var coungMsg = path.basename(outPutfileName) + ' has ' + _numSelectors + ' CSS selectors.';
-					var overLimitErrorMessage = coungMsg + ' IE8-9 will read only first ' + limit + '!';
 
 					if (overLimit) {
-						grunt.log.errorlns(overLimitErrorMessage);
-
-						if (options.failOnLimit) {
-							throw grunt.util.error(chalk.stripColor(overLimitErrorMessage));
-						}
+						grunt.log.errorlns(coungMsg + ' IE8-9 will read only first ' + limit + '!');
 					} else if (options.logCount !== 'warn') {
 						grunt.log.oklns(coungMsg);
 					}
@@ -111,6 +105,18 @@ module.exports = function(grunt) {
 
 				if (writeFiles) {
 					files.forEach(function (file) {
+
+						if (grunt.file.exists(inputFile.orig.src[0])) {
+							var sourceData = grunt.file.read(inputFile.orig.src);
+
+							var lostImports = sourceData.match(/(@import url((?!.blessed.).*);)/g);
+
+							if (writeCount + 1 === filesLength && lostImports !== null) {
+									for (var i = 0; i < lostImports.length; i++) {
+										file.content = lostImports[i] + "\n" + file.content;
+									}
+							}
+						}
 
 						// Because files is an array there is no way of finding the
 						// first file to add the banner without looping through them.
